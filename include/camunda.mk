@@ -55,10 +55,15 @@ update:
 
 .PHONY: rebalance-leaders
 rebalance-leaders:
-	kubectl port-forward --namespace camunda $$(kubectl get pod --namespace camunda --selector="app=camunda-platform,app.kubernetes.io/component=zeebe-gateway,app.kubernetes.io/instance=camunda,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=zeebe-gateway,app.kubernetes.io/part-of=camunda-platform" --output jsonpath='{.items[0].metadata.name}') 5433:9600 &
-	sleep 10
-	curl -X POST http://localhost:5433/actuator/rebalance/
-	kill $$(ps aux | grep '[k]ubectl' | awk '{print $$2}')
+	kubectl exec $$(kubectl get pod --namespace $(namespace) --selector="app=camunda-platform,app.kubernetes.io/component=zeebe-gateway,app.kubernetes.io/instance=camunda,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=zeebe-gateway,app.kubernetes.io/part-of=camunda-platform" --output jsonpath='{.items[0].metadata.name}') --namespace $(namespace) -c zeebe-gateway -- curl -i localhost:9600/actuator/rebalance -XPOST
+
+.PHONY: pause-exporters
+pause-exporters:
+	kubectl exec $$(kubectl get pod --namespace $(namespace) --selector="app=camunda-platform,app.kubernetes.io/component=zeebe-gateway,app.kubernetes.io/instance=camunda,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=zeebe-gateway,app.kubernetes.io/part-of=camunda-platform" --output jsonpath='{.items[0].metadata.name}') --namespace $(namespace) -c zeebe-gateway -- curl -i localhost:9600/actuator/exporting/pause -XPOST
+	
+.PHONY: resume-exporters
+resume-exporters:
+	kubectl exec $$(kubectl get pod --namespace $(namespace) --selector="app=camunda-platform,app.kubernetes.io/component=zeebe-gateway,app.kubernetes.io/instance=camunda,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=zeebe-gateway,app.kubernetes.io/part-of=camunda-platform" --output jsonpath='{.items[0].metadata.name}') --namespace $(namespace) -c zeebe-gateway -- curl -i localhost:9600/actuator/exporting/pause -XPOST
 
 .PHONY: uninstall-camunda
 uninstall-camunda:
